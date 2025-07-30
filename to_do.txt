@@ -1,6 +1,7 @@
 [v] create a new folder and a new github 
+[v] centralize the game state
 [_] decouple data from engine, put the story in a json
-[_] centralize the game state
+[_] float up to 0.1 and not int for spending 
 [_] dialogue choice effects: add variables, change stats
 [_] dialogue choice requirements: read variables, check stats
 [_] auto-branching: read variables, check stats
