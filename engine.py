@@ -41,11 +41,11 @@ class Engine:
                       
             # 5) check if player or enemy is dead, call next_element if so
             if not self.gs.player_object.is_alive():
-                # [_] need to raise an event or something for the UI to update
+                self.gs.current_element = self.gs.current_element.lose_story
                 return
 
             elif not self.gs.current_element.enemy.is_alive():
-                # [_] need to raise an event or something for the UI to update
+                self.gs.current_element = self.gs.current_element.win_story
                 return
             
             # 6) log callback: current_duel.tactic_hint(current_duel.enemy
@@ -56,29 +56,6 @@ class Engine:
         else:
             return
 
-    # "Next element" on the GameState - check win or loss the duel, check what type the next element is, etc.
-    def progress_element(self, wonDuel=False):
-        # [_] this will be called to START the next thing
-        if isinstance(self.gs.current_element, Duel):
-            if wonDuel:
-                return
-            else:
-                return
-        else:
-            return
-        
-    def choose_option(self, next_id):
-        # [_] implement this
-        return
-        
-# RUNNING THE GAME
-# 1) Load the JSON
-player, first_element = load_game_from_json("story.json")
-
-# 2) Wrap in a GameState
-gs = GameState(current_element=first_element, player_object=player)
-
-# 3) Instantiate the Engine with whatever UI’s logging callback you have
-# engine = Engine(gs, logging_function=whatever)
-
-# 4) Now hand off `engine` to the UI framework
+    # "Next element" on the GameState
+    def choose_option(self, next_element):
+        self.gs.current_element = next_element

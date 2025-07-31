@@ -3,3 +3,4 @@ class GameState:
         self.current_element = current_element
         self.player_object = player_object
         self.flags = set()
+        self.full_log = []

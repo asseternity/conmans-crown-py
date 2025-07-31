@@ -1,5 +1,5 @@
 import random
-from combatant import Combatant
+from modules.combatant import Combatant
 
 class Duel:
     def __init__ (self, id, win_story, lose_story, enemy: Combatant):
