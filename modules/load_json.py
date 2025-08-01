@@ -15,17 +15,24 @@ def load_game_from_json(json_path: str):
     story_by_id = {}
     duel_by_id = {}
 
-    # Create empty placeholders
+    # Fill in storylines, without options yet
     for story in data["storylines"]:
         story_by_id[story["id"]] = StoryLine(id=story["id"], text=story["text"], options=[])
 
+    # Fill in duels
     for duel in data["duels"]:
-        duel_by_id[duel["id"]] = None  # placeholder
+        enemy = Combatant.from_string(duel["enemy"])
+        duel_by_id[duel["id"]] = Duel(
+            id=duel['id'], 
+            win_story=story_by_id.get(duel["win_id"]),
+            lose_story=story_by_id.get(duel["lose_id"]),
+            enemy=enemy
+        )
 
     # Dictionary unpacking to merge two dictionaries into one
     elements_by_id = {**story_by_id, **duel_by_id}
 
-    # Fill in options
+    # Fill in options by looking up in the elements_by_id
     for story in data["storylines"]:
         story_by_id[story["id"]].options = [ DialogueOption(opt["text"], elements_by_id.get(opt["next_id"])) for opt in story["options"] ]
         # This is a list comprehension — a compact way to build a list.
@@ -38,14 +45,5 @@ def load_game_from_json(json_path: str):
         # If opt["next_id"] doesn't exist as a key, elements_by_id.get(...) safely returns None,
         # so no KeyError is raised, and the option will just point to nothing (i.e., an endpoint).
 
-    # Fill in duels
-    for duel in data["duels"]:
-        enemy = Combatant.from_string(duel["enemy"])
-        duel_by_id[duel["id"]] = Duel(
-            id=duel['id'], 
-            win_story=story_by_id.get(duel["win_id"]),
-            lose_story=story_by_id.get(duel["lose_id"]),
-            enemy=enemy
-        )
 
     return player, elements_by_id[data["storylines"][0]["id"]]

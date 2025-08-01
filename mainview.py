@@ -1,6 +1,9 @@
 import arcade
 import arcade.gui
+from modules.storyline import StoryLine
+from modules.duel import Duel
 from views.startup import StartupView
+from views.npc import NPC
 
 # Constants
 WINDOW_HEIGHT = 720
@@ -16,25 +19,18 @@ class MainView(arcade.View):
         # Init GUI manager
         self.manager = arcade.gui.UIManager()
 
-        # Create an anchor-layout *for each* panel
+        # Create dialogue UI
         self.dialogue_panel = arcade.gui.UIAnchorLayout()
         self.dialogue_box = arcade.gui.UIBoxLayout(vertical=True, align="center", space_between=20)
-        self.dialogue_label = arcade.gui.UILabel(text="Hello, traveler. What brings you here?", font_size=18, width=400, align="center")
+        self.dialogue_label = arcade.gui.UILabel(text="[Dialogue text]", font_size=18, width=400, align="center")
         self.dialogue_box.add(self.dialogue_label)
-        self.dialogue_next = arcade.gui.UIFlatButton(
-            text="Continue",
-            width=100
-        )   
-        self.dialogue_box.add(self.dialogue_next)
-        @self.dialogue_next.event("on_click")
-        def advance_dialogue(event):
-            self.dialogue_label.text = "Let me tell you a tale of the Conman’s Crown."
         self.dialogue_panel.add(
             child=self.dialogue_box,
             anchor_x="center_x",
             anchor_y="center_y"
         )
 
+        # Create duel UI
         self.duel_panel = arcade.gui.UIAnchorLayout()
         self.duel_box = arcade.gui.UIBoxLayout(vertical=True, align="center", space_between=20)
         self.duel_label = arcade.gui.UILabel(text="Duel time!", font_size=18, width=400, align="center")
@@ -77,14 +73,13 @@ class MainView(arcade.View):
         self.player_sprite = arcade.Sprite("assets/player_idle.png")
         self.player_sprite.center_x = 22
         self.player_sprite.center_y = 60
-        
-        self.npc_sprite = arcade.Sprite("assets/npc1.png")
-        self.npc_sprite.center_x = 500
-        self.npc_sprite.center_y = 60
 
         self.background_sprite = arcade.Sprite("assets/bg1.png")
         self.background_sprite.left = 0
         self.background_sprite.bottom = 0
+
+        # Create NPCs with the class
+        self.npc_sprite = NPC("assets/npc1.png", 500, 60, self.engine.gs.current_element)
         
         # use SpriteList - it's a lot more GPU efficient
         # put objects for which you will need collision utility separately - like Unity layers 
@@ -124,8 +119,8 @@ class MainView(arcade.View):
         # Code to draw other things  
         self.camera.use()
         self.background_list.draw()
-        self.player_list.draw()
         self.npc_list.draw()
+        self.player_list.draw()
 
         # Draw the manager.
         self.manager.draw()
@@ -157,10 +152,17 @@ class MainView(arcade.View):
         # reset
         if key == arcade.key.ESCAPE:
             self.setup()
+
+        # start dialogue
+        if key == arcade.key.T:
+            hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.npc_list)
+            for npc in hit_list:
+                if hasattr(npc, "storyline") and npc.storyline:
+                    self.toggle_dialogue_ui()
+                    self.start_storyline(npc.storyline)
+                    break
         
-        # duel and dialogue UI testing
-        if key == arcade.key.T and not self.duel_open:
-            self.toggle_dialogue_ui()
+        # duel testing
         if key == arcade.key.F and not self.dialogue_open:
             self.toggle_duel_ui()
     
@@ -172,6 +174,40 @@ class MainView(arcade.View):
             self.right_pressed = False
             self.update_player_speed()
 
+    def start_storyline(self, storyline):
+        self.engine.choose_option(storyline)  # updates current_element in GameState
+        self.rebuild_dialogue_box()
+
+    def rebuild_dialogue_box(self):
+        # Clear old box
+        self.dialogue_box.clear()
+
+        # Add label
+        self.dialogue_label = arcade.gui.UILabel(
+            text=self.engine.gs.current_element.text,
+            font_size=18,
+            width=400,
+            align="center"
+        )
+        self.dialogue_box.add(self.dialogue_label)
+
+        # Add a button for each dialogue option
+        for option in self.engine.gs.current_element.options:
+            button = arcade.gui.UIFlatButton(text=option.text, width=300)
+            
+            @button.event("on_click")
+            def on_click(event, option=option):  # default arg trick for closure
+                self.engine.choose_option(option.next_element)
+                if isinstance(option.next_element, StoryLine):
+                    self.start_storyline(option.next_element)
+                elif isinstance(option.next_element, Duel):
+                    self.toggle_dialogue_ui()
+                    self.start_duel(option.next_element)
+                else:
+                    self.toggle_dialogue_ui()
+            
+            self.dialogue_box.add(button)
+
     def toggle_dialogue_ui(self):
         if self.dialogue_open:
             self.manager.remove(self.dialogue_panel)
@@ -179,6 +215,9 @@ class MainView(arcade.View):
         else:
             self.manager.add(self.dialogue_panel)
             self.dialogue_open = True
+
+    def start_duel(self, duel):
+        self.toggle_duel_ui()
 
     def toggle_duel_ui(self):
         if self.duel_open:
@@ -188,8 +227,9 @@ class MainView(arcade.View):
             self.manager.add(self.duel_panel)
             self.duel_open = True
 
+
+# Entry point for Python. When you run a program, Python looks for a main() function and runs it.
 def main():
-    # Entry point for Python. When you run a program, Python looks for a main() function and runs it.
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
     main_game_view = MainView()
     start_view = StartupView(main_game_view)
@@ -213,9 +253,10 @@ if __name__ == "__main__":
 # [v] make sure the tasks in Engine are addressed, and everything is cleanly separate
 # [v] create a MainView method to show dialogue and options
 # [v] create a MainView method to show battle UI 
+# [_] attach storyline stubs in JSON to NPC objects
 # [_] connect the Engine with the dialogue and options UI, keeping things cleanly separate
 # [_] connect the Engine with the dueling UI, keeping things cleanly separate
-# [_] attach storyline stubs in JSON to NPC objects
+# [_] create and switch the logging function in startup.py
 # [_] add the frame around the whole window
 # [_] game UI
 # [_] saving and loading

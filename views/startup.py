@@ -36,8 +36,8 @@ class StartupView(arcade.View):
         # Create GameState
         gs = GameState(current_element=starting_element, player_object=player)
 
-        # Pass GameState into Engine
-        engine = Engine(gs=gs, logging_function=print) # [_] print is temporary
+        # Create Engine, pass GameState into Engine
+        engine = Engine(gs=gs, logging_function=print) #
 
         # Give both to MainView
         self.main_view.engine = engine
