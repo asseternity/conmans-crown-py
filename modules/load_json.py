@@ -45,5 +45,4 @@ def load_game_from_json(json_path: str):
         # If opt["next_id"] doesn't exist as a key, elements_by_id.get(...) safely returns None,
         # so no KeyError is raised, and the option will just point to nothing (i.e., an endpoint).
 
-
     return player, elements_by_id[data["storylines"][0]["id"]]
