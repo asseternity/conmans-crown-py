@@ -13,19 +13,48 @@ class MainView(arcade.View):
         # Call the parent class
         super().__init__()
 
-        # Init GUI manager and anchor
+        # Init GUI manager
         self.manager = arcade.gui.UIManager()
-        self.anchor = self.manager.add(arcade.gui.UIAnchorLayout())
 
-        # Store dialogue_button and anchor child as instance variables
-        self.dialogue_button = arcade.gui.UIFlatButton(text="Dialogue!", width=250)
+        # Create an anchor-layout *for each* panel
+        self.dialogue_panel = arcade.gui.UIAnchorLayout()
+        self.dialogue_box = arcade.gui.UIBoxLayout(vertical=True, align="center", space_between=20)
+        self.dialogue_label = arcade.gui.UILabel(text="Hello, traveler. What brings you here?", font_size=18, width=400, align="center")
+        self.dialogue_box.add(self.dialogue_label)
+        self.dialogue_next = arcade.gui.UIFlatButton(
+            text="Continue",
+            width=100
+        )   
+        self.dialogue_box.add(self.dialogue_next)
+        @self.dialogue_next.event("on_click")
+        def advance_dialogue(event):
+            self.dialogue_label.text = "Let me tell you a tale of the Conman’s Crown."
+        self.dialogue_panel.add(
+            child=self.dialogue_box,
+            anchor_x="center_x",
+            anchor_y="center_y"
+        )
 
-        @self.dialogue_button.event("on_click")
-        def on_click_switch_button(event):
-            print("Clicked!")
+        self.duel_panel = arcade.gui.UIAnchorLayout()
+        self.duel_box = arcade.gui.UIBoxLayout(vertical=True, align="center", space_between=20)
+        self.duel_label = arcade.gui.UILabel(text="Duel time!", font_size=18, width=400, align="center")
+        self.duel_box.add(self.duel_label)
+        self.duel_next = arcade.gui.UIFlatButton(
+            text="Attack",
+            width=100
+        )   
+        self.duel_box.add(self.duel_next)
+        @self.duel_next.event("on_click")
+        def advance_duel(event):
+            self.duel_label.text = "Duel continues!"
+        self.duel_panel.add(
+            child=self.duel_box,
+            anchor_x="center_x",
+            anchor_y="center_y"
+        )
 
-        # But don't add it to anchor yet; do that in toggle_dialogue_ui
-        self.dialogue_anchor_child = None
+        self.dialogue_open = False
+        self.duel_open     = False
 
         # Init objects
         self.player_sprite = None
@@ -80,6 +109,9 @@ class MainView(arcade.View):
     def on_show_view(self):
         self.manager.enable()
 
+    def on_hide_view(self):
+        self.manager.disable()
+
     def on_draw(self):
         # Render the screen.
 
@@ -113,6 +145,7 @@ class MainView(arcade.View):
         self.camera.position = (self.player_sprite.center_x, self.player_sprite.center_y + (WINDOW_HEIGHT // 2) - 50)
 
     def on_key_press(self, key, modifiers):
+        # movement
         if not self.dialogue_open and not self.duel_open:
             if key == arcade.key.LEFT or key == arcade.key.A:
                 self.left_pressed = True
@@ -121,12 +154,15 @@ class MainView(arcade.View):
                 self.right_pressed = True
                 self.update_player_speed()
 
+        # reset
         if key == arcade.key.ESCAPE:
             self.setup()
-        elif key == arcade.key.T:
+        
+        # duel and dialogue UI testing
+        if key == arcade.key.T and not self.duel_open:
             self.toggle_dialogue_ui()
-        elif key == arcade.key.F:
-            self.toggle_duel_ui
+        if key == arcade.key.F and not self.dialogue_open:
+            self.toggle_duel_ui()
     
     def on_key_release(self, key, modifiers):
         if key == arcade.key.LEFT or key == arcade.key.A:
@@ -138,25 +174,19 @@ class MainView(arcade.View):
 
     def toggle_dialogue_ui(self):
         if self.dialogue_open:
-            # Hide dialogue UI
-            if self.dialogue_anchor_child:
-                self.anchor.remove(self.dialogue_anchor_child)
-                self.dialogue_anchor_child = None
+            self.manager.remove(self.dialogue_panel)
             self.dialogue_open = False
         else:
-            # Show dialogue UI
-            self.dialogue_anchor_child = self.anchor.add(
-                anchor_x="center_x",
-                anchor_y="center_y",
-                child=self.dialogue_button
-            )
+            self.manager.add(self.dialogue_panel)
             self.dialogue_open = True
 
     def toggle_duel_ui(self):
-        if self.dialogue_open:
-            pass
+        if self.duel_open:
+            self.manager.remove(self.duel_panel)
+            self.duel_open = False
         else:
-            pass
+            self.manager.add(self.duel_panel)
+            self.duel_open = True
 
 def main():
     # Entry point for Python. When you run a program, Python looks for a main() function and runs it.
@@ -165,13 +195,6 @@ def main():
     start_view = StartupView(main_game_view)
     window.show_view(start_view)
     arcade.run() # run the engine
-
-def toggle_dialogue():
-
-    pass
-
-def toggle_duel():
-    pass
 
 # Checks whether the script is being run directly (e.g., python arcadeUI.py) or is being imported as a module from another script.
 # If run directly: filename literally changes to __ main__, so the below evaluates to True, and the block runs.
@@ -185,15 +208,15 @@ if __name__ == "__main__":
 # MainView owns the Engine and uses it to drive the UI.
 # StartupView (your main menu) can create and pass initial GameState to MainView via a loader function.
 
-# [_] create a MainView method to show dialogue and options
-# [_] create a MainView method to show battle UI 
-
+# --- ROADMAP ---
+# [v] main menu
+# [v] make sure the tasks in Engine are addressed, and everything is cleanly separate
+# [v] create a MainView method to show dialogue and options
+# [v] create a MainView method to show battle UI 
 # [_] connect the Engine with the dialogue and options UI, keeping things cleanly separate
 # [_] connect the Engine with the dueling UI, keeping things cleanly separate
-
 # [_] attach storyline stubs in JSON to NPC objects
-# [v] make sure the tasks in Engine are addressed, and everything is cleanly separate
-
-# [v] main menu
+# [_] add the frame around the whole window
+# [_] game UI
 # [_] saving and loading
 # [_] block camera from going offscreen
